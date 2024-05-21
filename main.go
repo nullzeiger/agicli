@@ -33,7 +33,23 @@ type Item struct {
 }
 
 func main() {
-	url := "https://www.agi.it/estero/rss"
+	urls := [8]string{"https://www.agi.it/cronaca/rss", "https://www.agi.it/economia/rss", "https://www.agi.it/politica/rss", "https://www.agi.it/estero/rss", "https://www.agi.it/cultura/rss", "https://www.agi.it/sport/rss", "https://www.agi.it/innovazione/rss", "https://www.agi.it/lifestyle/rss"}
+
+	var i int
+
+	fmt.Println("Agi rss number")
+	fmt.Println("0 to cronaca")
+	fmt.Println("1 to economia")
+	fmt.Println("2 to politica")
+	fmt.Println("3 to estero")
+	fmt.Println("4 to cultura")
+	fmt.Println("5 to sport")
+	fmt.Println("6 to innovazione")
+	fmt.Println("7 to lifestyle")
+	fmt.Print("Select number rss: ")
+	fmt.Scan(&i)
+
+	url := urls[i]
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 
