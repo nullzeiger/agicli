@@ -51,7 +51,7 @@ func main() {
 
 	url := urls[i]
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
 
 	defer cancel()
 
@@ -66,7 +66,7 @@ func main() {
 	resp, err := client.Do(req)
 	if err != nil {
 		if err == context.DeadlineExceeded {
-			fmt.Println("Error: request timed out after 10 seconds")
+			fmt.Println("Error: request timed out after 3 seconds")
 		} else {
 			fmt.Println("Error getting response:", err)
 		}
