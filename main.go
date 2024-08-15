@@ -88,6 +88,7 @@ func main() {
 	for _, item := range rss.Channel.Items {
 		fmt.Println("Title:", item.Title)
 		fmt.Println("Link:", item.Link)
+		fmt.Println("Description:", item.Desc)
 		fmt.Println("PubDate:", item.PubDate)
 		fmt.Println()
 	}
