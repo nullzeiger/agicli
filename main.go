@@ -10,7 +10,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 type Rss struct {
@@ -51,11 +50,7 @@ func main() {
 
 	url := urls[i]
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
-
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
