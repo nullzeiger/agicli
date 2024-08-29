@@ -6,7 +6,6 @@
 package main
 
 import (
-	"context"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -60,11 +59,7 @@ func main() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		if err == context.DeadlineExceeded {
-			fmt.Println("Error: request timed out after 3 seconds")
-		} else {
-			fmt.Println("Error getting response:", err)
-		}
+		fmt.Println("Error getting response:", err)
 		return
 	}
 	defer resp.Body.Close()
