@@ -9,6 +9,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 )
 
 type Rss struct {
@@ -30,24 +32,56 @@ type Item struct {
 	PubDate string `xml:"pubDate"`
 }
 
+func without_tags(text string) string {
+	newText := ""
+	newText = strings.ReplaceAll(text, "<p>", "")
+	newText = strings.ReplaceAll(newText, "</p>", "")
+	newText = strings.ReplaceAll(newText, "<div>", "")
+	newText = strings.ReplaceAll(newText, "</div>", "")
+	newText = strings.ReplaceAll(newText, "<strong>", "")
+	newText = strings.ReplaceAll(newText, "</strong>", "")
+	newText = strings.ReplaceAll(newText, "<h2>", "")
+	newText = strings.ReplaceAll(newText, "</h2>", "")
+	newText = strings.ReplaceAll(newText, "<h3>", "")
+	newText = strings.ReplaceAll(newText, "</h3>", "")
+	newText = strings.ReplaceAll(newText, "<br>", "")
+	newText = strings.ReplaceAll(newText, "<;>", "")
+	newText = strings.ReplaceAll(newText, "<.;>", ".")
+	newText = strings.ReplaceAll(newText, "&nbsp;", "")
+	return newText
+}
+
 func main() {
-	urls := [8]string{"https://www.agi.it/cronaca/rss", "https://www.agi.it/economia/rss", "https://www.agi.it/politica/rss", "https://www.agi.it/estero/rss", "https://www.agi.it/cultura/rss", "https://www.agi.it/sport/rss", "https://www.agi.it/innovazione/rss", "https://www.agi.it/lifestyle/rss"}
+	urls := [8]string{
+		"https://www.agi.it/cronaca/rss",
+		"https://www.agi.it/economia/rss",
+		"https://www.agi.it/politica/rss",
+		"https://www.agi.it/estero/rss",
+		"https://www.agi.it/cultura/rss",
+		"https://www.agi.it/sport/rss",
+		"https://www.agi.it/innovazione/rss",
+		"https://www.agi.it/lifestyle/rss",
+	}
 
-	var i int
+	i := -1
 
-	fmt.Println("Agi rss number")
-	fmt.Println("0 to cronaca")
-	fmt.Println("1 to economia")
-	fmt.Println("2 to politica")
-	fmt.Println("3 to estero")
-	fmt.Println("4 to cultura")
-	fmt.Println("5 to sport")
-	fmt.Println("6 to innovazione")
-	fmt.Println("7 to lifestyle")
+	fmt.Println("Agi rss number (0 for exit)")
+	fmt.Println("1 to cronaca")
+	fmt.Println("2 to economia")
+	fmt.Println("3 to politica")
+	fmt.Println("4 to estero")
+	fmt.Println("5 to cultura")
+	fmt.Println("6 to sport")
+	fmt.Println("7 to innovazione")
+	fmt.Println("8 to lifestyle")
 	fmt.Print("Select number rss: ")
 	fmt.Scan(&i)
 
-	url := urls[i]
+	if i == 0 {
+		os.Exit(0)
+	}
+
+	url := urls[i-1]
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -78,7 +112,8 @@ func main() {
 	for _, item := range rss.Channel.Items {
 		fmt.Println("Title:", item.Title)
 		fmt.Println("Link:", item.Link)
-		fmt.Println("Description:", item.Desc)
+		fmt.Print("Description: ")
+		fmt.Println(without_tags(item.Desc))
 		fmt.Println("PubDate:", item.PubDate)
 		fmt.Println()
 	}
