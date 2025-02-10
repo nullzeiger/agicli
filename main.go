@@ -6,18 +6,23 @@
 package main
 
 import (
+	"context"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
-	"strings"
+	"regexp"
+	"time"
 )
 
-type Rss struct {
+// RSS represents the root XML structure of an RSS feed
+type RSS struct {
 	XMLName xml.Name `xml:"rss"`
 	Channel Channel  `xml:"channel"`
 }
 
+// Channel represents the main content container in an RSS feed
 type Channel struct {
 	Title       string `xml:"title"`
 	Description string `xml:"description"`
@@ -25,6 +30,7 @@ type Channel struct {
 	Items       []Item `xml:"item"`
 }
 
+// Item represents a single article in the RSS feed
 type Item struct {
 	Title   string `xml:"title"`
 	Link    string `xml:"link"`
@@ -32,89 +38,112 @@ type Item struct {
 	PubDate string `xml:"pubDate"`
 }
 
-func without_tags(text string) string {
-	newText := ""
-	newText = strings.ReplaceAll(text, "<p>", "")
-	newText = strings.ReplaceAll(newText, "</p>", "")
-	newText = strings.ReplaceAll(newText, "<div>", "")
-	newText = strings.ReplaceAll(newText, "</div>", "")
-	newText = strings.ReplaceAll(newText, "<strong>", "")
-	newText = strings.ReplaceAll(newText, "</strong>", "")
-	newText = strings.ReplaceAll(newText, "<h2>", "")
-	newText = strings.ReplaceAll(newText, "</h2>", "")
-	newText = strings.ReplaceAll(newText, "<h3>", "")
-	newText = strings.ReplaceAll(newText, "</h3>", "")
-	newText = strings.ReplaceAll(newText, "<br>", "")
-	newText = strings.ReplaceAll(newText, "<;>", "")
-	newText = strings.ReplaceAll(newText, "<.;>", ".")
-	newText = strings.ReplaceAll(newText, "&nbsp;", "")
-	return newText
+var (
+	// categoryURLs maps category numbers to their respective RSS feed URLs
+	categoryURLs = map[int]string{
+		1: "https://www.agi.it/cronaca/rss",
+		2: "https://www.agi.it/economia/rss",
+		3: "https://www.agi.it/politica/rss",
+		4: "https://www.agi.it/estero/rss",
+		5: "https://www.agi.it/cultura/rss",
+		6: "https://www.agi.it/sport/rss",
+		7: "https://www.agi.it/innovazione/rss",
+		8: "https://www.agi.it/lifestyle/rss",
+	}
+
+	// htmlTagRegex matches HTML tags for removal
+	htmlTagRegex = regexp.MustCompile(`<[^>]*>`)
+)
+
+// removeTags removes HTML tags and special characters from the input text
+func removeTags(text string) string {
+	// Remove HTML tags using regex
+	cleanText := htmlTagRegex.ReplaceAllString(text, "")
+
+	// Remove special characters
+	cleanText = regexp.MustCompile(`&nbsp;`).ReplaceAllString(cleanText, " ")
+
+	return cleanText
 }
 
-func main() {
-	urls := [8]string{
-		"https://www.agi.it/cronaca/rss",
-		"https://www.agi.it/economia/rss",
-		"https://www.agi.it/politica/rss",
-		"https://www.agi.it/estero/rss",
-		"https://www.agi.it/cultura/rss",
-		"https://www.agi.it/sport/rss",
-		"https://www.agi.it/innovazione/rss",
-		"https://www.agi.it/lifestyle/rss",
-	}
-
-	i := -1
-
-	fmt.Println("Agi rss number (0 for exit)")
-	fmt.Println("1 to cronaca")
-	fmt.Println("2 to economia")
-	fmt.Println("3 to politica")
-	fmt.Println("4 to estero")
-	fmt.Println("5 to cultura")
-	fmt.Println("6 to sport")
-	fmt.Println("7 to innovazione")
-	fmt.Println("8 to lifestyle")
-	fmt.Print("Select number rss: ")
-	fmt.Scan(&i)
-
-	if i == 0 {
-		os.Exit(0)
-	}
-
-	url := urls[i-1]
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+// fetchRSSFeed retrieves and parses the RSS feed from the given URL
+func fetchRSSFeed(ctx context.Context, url string) (*RSS, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
+		return nil, fmt.Errorf("creating request: %w", err)
 	}
 
-	client := http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error getting response:", err)
-		return
+		return nil, fmt.Errorf("fetching RSS feed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var rss Rss
-	decoder := xml.NewDecoder(resp.Body)
-	err = decoder.Decode(&rss)
-	if err != nil {
-		fmt.Println("Error decoding XML:", err)
-		return
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	fmt.Println("Title:", rss.Channel.Title)
-	fmt.Println("Description:", rss.Channel.Description)
+	var rss RSS
+	if err := xml.NewDecoder(resp.Body).Decode(&rss); err != nil {
+		return nil, fmt.Errorf("decoding XML: %w", err)
+	}
 
+	return &rss, nil
+}
+
+// printMenu displays the available RSS categories
+func printMenu() {
+	fmt.Println("AGI RSS Reader")
+	fmt.Println("0: Exit")
+	fmt.Println("1: Cronaca")
+	fmt.Println("2: Economia")
+	fmt.Println("3: Politica")
+	fmt.Println("4: Estero")
+	fmt.Println("5: Cultura")
+	fmt.Println("6: Sport")
+	fmt.Println("7: Innovazione")
+	fmt.Println("8: Lifestyle")
+	fmt.Print("\nSelect category number: ")
+}
+
+func main() {
+	printMenu()
+
+	var category int
+	if _, err := fmt.Scan(&category); err != nil {
+		log.Fatal("Error reading input:", err)
+	}
+
+	if category == 0 {
+		os.Exit(0)
+	}
+
+	url, exists := categoryURLs[category]
+	if !exists {
+		log.Fatal("Invalid category number")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	rss, err := fetchRSSFeed(ctx, url)
+	if err != nil {
+		log.Fatal("Error fetching RSS feed:", err)
+	}
+
+	// Print feed information
+	fmt.Printf("\nTitle: %s\n", rss.Channel.Title)
+	fmt.Printf("Description: %s\n\n", rss.Channel.Description)
+
+	// Print each item
 	for _, item := range rss.Channel.Items {
-		fmt.Println("Title:", item.Title)
-		fmt.Println("Link:", item.Link)
-		fmt.Print("Description: ")
-		fmt.Println(without_tags(item.Desc))
-		fmt.Println("PubDate:", item.PubDate)
-		fmt.Println()
+		fmt.Printf("Title: %s\n", item.Title)
+		fmt.Printf("Link: %s\n", item.Link)
+		fmt.Printf("Description: %s\n", removeTags(item.Desc))
+		fmt.Printf("Published: %s\n\n", item.PubDate)
 	}
 }
