@@ -7,7 +7,7 @@
 *.dll
 *.so
 *.dylib
-agicli
+build/agicli
 
 # Test binary, built with `go test -c`
 *.test

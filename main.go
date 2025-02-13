@@ -145,5 +145,6 @@ func main() {
 		fmt.Printf("Link: %s\n", item.Link)
 		fmt.Printf("Description: %s\n", removeTags(item.Desc))
 		fmt.Printf("Published: %s\n\n", item.PubDate)
+		fmt.Println("--------------------------------------------------------------------------------")
 	}
 }
